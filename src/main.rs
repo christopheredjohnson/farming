@@ -39,7 +39,6 @@ struct AnimatedSprite {
 #[derive(Component)]
 struct AnimationConfig {
     frames_per_row: usize,
-    fps: u8,
     timer: Timer,
 }
 
@@ -47,7 +46,6 @@ impl AnimationConfig {
     fn new(frames_per_row: usize, fps: u8) -> Self {
         Self {
             frames_per_row,
-            fps,
             timer: Timer::new(
                 Duration::from_secs_f32(1.0 / fps as f32),
                 TimerMode::Repeating,
@@ -81,7 +79,7 @@ fn handle_input(
     let is_moving = direction != Vec2::ZERO;
 
     // Apply to player entity
-    if let Ok(mut transform) = player.get_single_mut() {
+    if let Ok(mut transform) = player.single_mut() {
         let move_delta = direction.normalize_or_zero() * PLAYER_SPEED * time.delta_secs();
         transform.translation += move_delta.extend(0.);
     }
@@ -102,7 +100,6 @@ fn handle_input(
         }
     }
 }
-
 
 fn execute_animations(
     time: Res<Time>,
