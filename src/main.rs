@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use bevy::input::keyboard::KeyCode;
+use bevy::prelude::*;
 use std::time::Duration;
 
 fn main() {
@@ -9,6 +9,12 @@ fn main() {
         .add_systems(Update, (handle_input, execute_animations))
         .run();
 }
+
+// Player movement speed factor.
+const PLAYER_SPEED: f32 = 100.;
+
+#[derive(Component)]
+struct Player;
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum Direction {
@@ -42,32 +48,61 @@ impl AnimationConfig {
         Self {
             frames_per_row,
             fps,
-            timer: Timer::new(Duration::from_secs_f32(1.0 / fps as f32), TimerMode::Repeating),
+            timer: Timer::new(
+                Duration::from_secs_f32(1.0 / fps as f32),
+                TimerMode::Repeating,
+            ),
         }
     }
 }
 
-fn handle_input(mut query: Query<&mut AnimatedSprite>, input: Res<ButtonInput<KeyCode>>) {
+fn handle_input(
+    mut query: Query<&mut AnimatedSprite>,
+    input: Res<ButtonInput<KeyCode>>,
+    mut player: Query<&mut Transform, With<Player>>,
+    time: Res<Time>,
+) {
+    let mut direction = Vec2::ZERO;
+
+    // Build movement vector based on pressed keys
+    if input.pressed(KeyCode::ArrowUp) {
+        direction.y += 1.0;
+    }
+    if input.pressed(KeyCode::ArrowDown) {
+        direction.y -= 1.0;
+    }
+    if input.pressed(KeyCode::ArrowLeft) {
+        direction.x -= 1.0;
+    }
+    if input.pressed(KeyCode::ArrowRight) {
+        direction.x += 1.0;
+    }
+
+    let is_moving = direction != Vec2::ZERO;
+
+    // Apply to player entity
+    if let Ok(mut transform) = player.get_single_mut() {
+        let move_delta = direction.normalize_or_zero() * PLAYER_SPEED * time.delta_secs();
+        transform.translation += move_delta.extend(0.);
+    }
+
+    // Update sprite animation
     for mut animated in &mut query {
-        let mut new_state = AnimationType::Idle;
-
-        if input.pressed(KeyCode::ArrowUp) {
-            animated.direction = Direction::Up;
-            new_state = AnimationType::Walking;
-        } else if input.pressed(KeyCode::ArrowDown) {
-            animated.direction = Direction::Down;
-            new_state = AnimationType::Walking;
-        } else if input.pressed(KeyCode::ArrowLeft) {
-            animated.direction = Direction::Left;
-            new_state = AnimationType::Walking;
-        } else if input.pressed(KeyCode::ArrowRight) {
-            animated.direction = Direction::Right;
-            new_state = AnimationType::Walking;
+        if is_moving {
+            animated.state = AnimationType::Walking;
+            animated.direction = match direction {
+                d if d.y > 0.0 => Direction::Up,
+                d if d.y < 0.0 => Direction::Down,
+                d if d.x > 0.0 => Direction::Right,
+                d if d.x < 0.0 => Direction::Left,
+                _ => animated.direction,
+            };
+        } else {
+            animated.state = AnimationType::Idle;
         }
-
-        animated.state = new_state;
     }
 }
+
 
 fn execute_animations(
     time: Res<Time>,
@@ -124,11 +159,12 @@ fn setup(
             }),
             ..default()
         },
-        Transform::from_scale(Vec3::splat(6.0)),
+        Transform::from_scale(Vec3::splat(2.0)),
         AnimatedSprite {
             direction: Direction::Down,
             state: AnimationType::Idle,
         },
         AnimationConfig::new(8, 10), // 8 frames per row, 10 FPS
+        Player,
     ));
 }
