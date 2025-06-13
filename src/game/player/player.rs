@@ -7,11 +7,14 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup)
-            .add_systems(Update, (handle_input, execute_animations));
+            .add_systems(Update, (handle_input, update_tool_display, execute_animations));
     }
 }
 
 const PLAYER_SPEED: f32 = 100.;
+
+#[derive(Component)]
+struct ToolDisplay;
 
 #[derive(Component)]
 struct Player;
@@ -67,49 +70,47 @@ impl AnimationConfig {
 }
 
 fn handle_input(
-    mut query: Query<&mut AnimatedSprite>,
+    mut animated_query: Query<&mut AnimatedSprite>,
     input: Res<ButtonInput<KeyCode>>,
-    mut player: Query<&mut Transform, With<Player>>,
+    mouse: Res<ButtonInput<MouseButton>>,
+    mut player_query: Query<&mut Transform, With<Player>>,
     time: Res<Time>,
 ) {
-    let mut direction = Vec2::ZERO;
-
-    if let Ok(mut transform) = player.single_mut() {
-        for mut animated in &mut query {
-            // Tool actions
-            if input.pressed(KeyCode::KeyQ) {
-                animated.state = AnimationType::Acting;
+    if let Ok(mut transform) = player_query.single_mut() {
+        if let Ok(mut animated) = animated_query.single_mut() {
+            // === Tool selection ===
+            if input.just_pressed(KeyCode::Digit1) {
                 animated.action = ToolAction::Chop;
-                return;
-            } else if input.pressed(KeyCode::KeyW) {
-                animated.state = AnimationType::Acting;
+            } else if input.just_pressed(KeyCode::Digit2) {
                 animated.action = ToolAction::Hoe;
-                return;
-            } else if input.pressed(KeyCode::KeyE) {
-                animated.state = AnimationType::Acting;
+            } else if input.just_pressed(KeyCode::Digit3) {
                 animated.action = ToolAction::Water;
-                return;
+            } else if input.just_pressed(KeyCode::Digit4) {
+                animated.action = ToolAction::None;
             }
 
-            // Movement input
-            if input.pressed(KeyCode::ArrowUp) {
+            let mut direction = Vec2::ZERO;
+
+            if input.pressed(KeyCode::KeyW) {
                 direction.y += 1.0;
             }
-            if input.pressed(KeyCode::ArrowDown) {
+            if input.pressed(KeyCode::KeyS) {
                 direction.y -= 1.0;
             }
-            if input.pressed(KeyCode::ArrowLeft) {
+            if input.pressed(KeyCode::KeyA) {
                 direction.x -= 1.0;
             }
-            if input.pressed(KeyCode::ArrowRight) {
+            if input.pressed(KeyCode::KeyD) {
                 direction.x += 1.0;
             }
 
             let is_moving = direction != Vec2::ZERO;
+            let is_acting = mouse.pressed(MouseButton::Left) && animated.action != ToolAction::None;
 
-            if is_moving {
+            if is_acting {
+                animated.state = AnimationType::Acting;
+            } else if is_moving {
                 animated.state = AnimationType::Walking;
-                animated.action = ToolAction::None;
 
                 animated.direction = match direction {
                     d if d.y > 0.0 => Direction::Up,
@@ -123,7 +124,6 @@ fn handle_input(
                 transform.translation += move_delta.extend(0.);
             } else {
                 animated.state = AnimationType::Idle;
-                animated.action = ToolAction::None;
             }
         }
     }
@@ -189,7 +189,6 @@ fn setup(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-
     let texture = asset_server.load("character.png");
     let layout = TextureAtlasLayout::from_grid(UVec2::splat(48), 8, 24, None, None);
     let layout_handle = texture_atlas_layouts.add(layout);
@@ -212,4 +211,34 @@ fn setup(
         AnimationConfig::new(8, 10),
         Player,
     ));
+
+    commands.spawn((
+        Text::new("Action: None"),
+        TextFont {
+            font_size: 42.0,
+            ..default()
+        },
+        TextColor(Color::WHITE),
+        TextLayout::default(),
+        ToolDisplay,
+    ));
+}
+
+
+fn update_tool_display(
+    animated_query: Query<&AnimatedSprite, With<Player>>,
+    mut writer: TextUiWriter,
+    query: Query<Entity, With<ToolDisplay>>,
+) {
+    if let Ok(animated) = animated_query.single() {
+        if let Ok(entity) = query.single() {
+            let label = match animated.action {
+                ToolAction::Chop => "Chop",
+                ToolAction::Hoe => "Hoe",
+                ToolAction::Water => "Water",
+                ToolAction::None => "None",
+            };
+            *writer.text(entity, 0) = format!("Action: {}", label);
+        }
+    }
 }
