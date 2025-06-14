@@ -1,6 +1,5 @@
 use bevy::prelude::*;
-
-use super::player::*;
+use super::{player::*};
 
 pub struct GamePlugin;
 

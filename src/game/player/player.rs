@@ -6,8 +6,15 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup)
-            .add_systems(Update, (handle_input, update_tool_display, execute_animations));
+        app.add_systems(Startup, setup).add_systems(
+            Update,
+            (
+                handle_input,
+                update_tool_display,
+                camera_follow_player,
+                execute_animations,
+            ),
+        );
     }
 }
 
@@ -72,7 +79,6 @@ impl AnimationConfig {
 fn handle_input(
     mut animated_query: Query<&mut AnimatedSprite>,
     input: Res<ButtonInput<KeyCode>>,
-    mouse: Res<ButtonInput<MouseButton>>,
     mut player_query: Query<&mut Transform, With<Player>>,
     time: Res<Time>,
 ) {
@@ -105,7 +111,7 @@ fn handle_input(
             }
 
             let is_moving = direction != Vec2::ZERO;
-            let is_acting = mouse.pressed(MouseButton::Left) && animated.action != ToolAction::None;
+            let is_acting = input.pressed(KeyCode::Space) && animated.action != ToolAction::None;
 
             if is_acting {
                 animated.state = AnimationType::Acting;
@@ -202,7 +208,7 @@ fn setup(
             }),
             ..default()
         },
-        Transform::from_scale(Vec3::splat(2.0)),
+        Transform::from_scale(Vec3::splat(2.0)).with_translation(Vec3::new(0., 0., 1.0)),
         AnimatedSprite {
             direction: Direction::Down,
             state: AnimationType::Idle,
@@ -224,7 +230,6 @@ fn setup(
     ));
 }
 
-
 fn update_tool_display(
     animated_query: Query<&AnimatedSprite, With<Player>>,
     mut writer: TextUiWriter,
@@ -239,6 +244,26 @@ fn update_tool_display(
                 ToolAction::None => "None",
             };
             *writer.text(entity, 0) = format!("Action: {}", label);
+        }
+    }
+}
+
+fn camera_follow_player(
+    player_query: Query<&Transform, (With<Player>, Without<Camera>)>,
+    mut camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    time: Res<Time>,
+) {
+    if let Ok(player_transform) = player_query.single() {
+        if let Ok(mut camera_transform) = camera_query.single_mut() {
+            let cam_speed = 5.0;
+            camera_transform.translation.x = camera_transform.translation.x.lerp(
+                player_transform.translation.x,
+                cam_speed * time.delta_secs(),
+            );
+            camera_transform.translation.y = camera_transform.translation.y.lerp(
+                player_transform.translation.y,
+                cam_speed * time.delta_secs(),
+            );
         }
     }
 }

@@ -1,0 +1,70 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "maps/farm.tmx",
+    "expandedProjectPaths": [
+        "maps",
+        "."
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "maps/farm.tmx": {
+            "scale": 1,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 719,
+                "y": 772
+            }
+        },
+        "maps/farm.tmx#Grass": {
+            "scaleInDock": 1
+        },
+        "maps/farm.tmx#Water": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "maps/farm.tmx#Wooden_House_Walls_Tilset": {
+            "scaleInDock": 1
+        },
+        "maps/farm.tmx#tiles": {
+            "dynamicWrapping": false,
+            "scaleInEditor": 1
+        },
+        "maps/farm.tmx#tilesets": {
+            "scaleInEditor": 1
+        },
+        "maps/farming.tiled-session.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 11
+        }
+    },
+    "frame.defaultDuration": 100,
+    "last.imagePath": "/Users/christophere.johnson/development/farming/assets",
+    "map.height": 100,
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "map.width": 100,
+    "openFiles": [
+        "maps/farm.tmx"
+    ],
+    "project": "farming.tiled-project",
+    "recentFiles": [
+        "maps/farm.tmx",
+        "maps/farming.tiled-session.tsx"
+    ],
+    "tileset.embedInMap": true,
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    },
+    "tileset.type": 0
+}
